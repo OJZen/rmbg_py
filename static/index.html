@@ -1,0 +1,381 @@
+
+<!-- Import Vue 3 -->
+<!--     <script src="//cdn.jsdelivr.net/npm/vue@3"></script> -->
+    <!-- Import component library -->
+<!--     <script src="//cdn.jsdelivr.net/npm/element-plus"></script> -->
+    <!-- 引入Element Plus图标 -->
+<!--     <script src="//cdn.jsdelivr.net/npm/@element-plus/icons-vue"></script> -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片背景移除工具</title>
+    <!-- 引入Element Plus -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.3.6/index.css" />
+    <!-- 引入Vue 3 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+    <!-- 引入Element Plus组件库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.3.6/index.full.min.js"></script>
+    <!-- 正确引入Element Plus图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-plus/2.3.6/theme-chalk/el-icon.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/runtime-dom.global.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/element-plus-icons-vue/2.1.0/index.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .results-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .results-title {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .result-card {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        .result-card:hover {
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            display: block;
+            margin: 0 auto 15px;
+            border-radius: 4px;
+        }
+        .info-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #606266;
+        }
+        .result-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .empty-tip {
+            text-align: center;
+            padding: 40px 0;
+            color: #909399;
+            font-size: 14px;
+        }
+        .progress-info {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .upload-area {
+            border: 1px dashed #d9d9d9;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            padding: 60px 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #409EFF;
+        }
+        .upload-action-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .file-list {
+            margin-top: 20px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            background-color: #f5f7fa;
+        }
+        .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 10px;
+        }
+        .upload-icon {
+            font-size: 40px;
+            color: #8c939d;
+            margin-bottom: 10px;
+        }
+        .delete-icon {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="page-header">
+                <h1>图片背景移除工具</h1>
+                <p>上传图片，自动移除背景并生成透明图片</p>
+            </div>
+            
+            <div class="upload-container">
+                <!-- 自定义上传区域 -->
+                <div class="upload-area" @click="triggerFileInput">
+                    <input 
+                        type="file" 
+                        ref="fileInput" 
+                        @change="handleFiles" 
+                        multiple 
+                        accept=".jpg,.jpeg,.png,.webp" 
+                        style="display: none;"
+                    >
+                    <i class="upload-icon el-icon-upload"></i>
+                    <div style="margin-top: 10px; font-size: 16px; color: #606266;">点击选择图片或拖拽图片到此处</div>
+                    <div style="margin-top: 5px; font-size: 12px; color: #909399;">
+                        支持JPG、JPEG、PNG和WEBP格式，单次最多上传10张图片
+                    </div>
+                </div>
+                
+                <!-- 文件列表 -->
+                <div class="file-list" v-if="fileList.length > 0">
+                    <div class="file-item" v-for="(file, index) in fileList" :key="index">
+                        <div class="file-name">{{ file.name }}</div>
+                        <el-button type="danger" size="small" @click="removeFile(index)">
+                            <i class="el-icon-delete delete-icon"></i>删除
+                        </el-button>
+                    </div>
+                </div>
+                
+                <!-- 上传按钮 - 只保留一个处理按钮 -->
+                <div class="upload-action-buttons">
+                    <el-button type="success" :loading="uploading" @click="submitUpload" :disabled="fileList.length === 0">
+                        {{ uploading ? '处理中...' : '开始处理' }}
+                    </el-button>
+                </div>
+                
+                <!-- 进度条 -->
+                <div v-if="uploading" class="progress-info">
+                    <el-progress :percentage="uploadProgress" :show-text="false"></el-progress>
+                    <div style="margin-top: 5px;">{{ uploadProgressText }}</div>
+                </div>
+            </div>
+            
+            <div class="results-container" v-if="results.length > 0">
+                <h2 class="results-title">处理结果</h2>
+                <el-row :gutter="20">
+                    <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="(result, index) in results" :key="index">
+                        <div class="result-card">
+                            <img :src="getImageUrl(result)" class="image-preview" alt="处理后的图片" />
+                            <div class="info-item"><strong>文件名:</strong> {{ result.processed_filename }}</div>
+                            <div class="info-item"><strong>尺寸:</strong> {{ result.original_size?.[0] || '-' }} x {{ result.original_size?.[1] || '-' }}</div>
+                            <div class="info-item"><strong>处理时间:</strong> {{ result.process_time || '-' }} 秒</div>
+                            <div class="result-actions">
+                                <el-button type="primary" size="small" @click="downloadImage(result)">
+                                    <i class="el-icon-download"></i> 下载
+                                </el-button>
+                            </div>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+            
+            <div v-else-if="!uploading" class="results-container">
+                <div class="empty-tip">
+                    <i class="el-icon-picture-outline" style="font-size: 40px; margin-bottom: 10px;"></i>
+                    <div>还没有处理结果，请上传图片并点击"开始处理"</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue;
+        
+        const app = createApp({
+            setup() {
+                // API基础URL，部署时使用相对路径
+                const apiBaseUrl = '';
+                
+                // 状态变量
+                const fileList = ref([]);
+                const uploading = ref(false);
+                const results = ref([]);
+                const uploadProgress = ref(0);
+                const uploadProgressText = ref('');
+                const fileInput = ref(null);
+                
+                // 触发文件选择器
+                const triggerFileInput = () => {
+                    fileInput.value.click();
+                };
+                
+                // 处理选择的文件
+                const handleFiles = (event) => {
+                    const newFiles = Array.from(event.target.files);
+                    
+                    // 检查是否超过最大文件限制
+                    if (fileList.value.length + newFiles.length > 10) {
+                        ElementPlus.ElMessage.warning('最多只能上传10张图片！');
+                        return;
+                    }
+                    
+                    // 添加到文件列表
+                    newFiles.forEach(file => {
+                        // 检查文件类型
+                        const fileType = file.type.toLowerCase();
+                        if (!fileType.match(/image\/(jpeg|jpg|png|webp)/)) {
+                            ElementPlus.ElMessage.error(`文件 ${file.name} 格式不支持，请上传JPG、PNG或WEBP图片`);
+                            return;
+                        }
+                        
+                        fileList.value.push(file);
+                    });
+                    
+                    // 重置文件输入框，确保相同文件可以再次选择
+                    event.target.value = '';
+                };
+                
+                // 移除文件
+                const removeFile = (index) => {
+                    fileList.value.splice(index, 1);
+                };
+                
+                // 提交上传处理
+                const submitUpload = async () => {
+                    if (fileList.value.length === 0) {
+                        ElementPlus.ElMessage.warning('请先选择图片！');
+                        return;
+                    }
+                    
+                    uploading.value = true;
+                    uploadProgress.value = 0;
+                    uploadProgressText.value = '准备处理...';
+                    
+                    try {
+                        const formData = new FormData();
+                        fileList.value.forEach(file => {
+                            formData.append('files[]', file);
+                        });
+                        
+                        // 模拟进度
+                        const progressInterval = setInterval(() => {
+                            if (uploadProgress.value < 90) {
+                                uploadProgress.value += Math.random() * 10;
+                                uploadProgressText.value = `处理中 ${Math.round(uploadProgress.value)}%...`;
+                            }
+                        }, 500);
+                        
+                        console.log('发送请求到:', `${apiBaseUrl}/api/remove-background`);
+                        
+                        // 发送请求到后端API
+                        const response = await fetch(`${apiBaseUrl}/api/remove-background`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        clearInterval(progressInterval);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        uploadProgress.value = 100;
+                        uploadProgressText.value = '处理完成！';
+                        
+                        console.log('处理结果:', data);
+                        
+                        // 更新结果
+                        results.value = data.results;
+                        
+                        // 成功提示
+                        ElementPlus.ElMessage.success(`成功处理 ${results.value.length} 张图片！`);
+                        
+                        // 清空文件列表
+                        fileList.value = [];
+                        
+                    } catch (error) {
+                        console.error('Error processing images:', error);
+                        ElementPlus.ElMessage.error('处理图片时发生错误，请重试！');
+                    } finally {
+                        setTimeout(() => {
+                            uploading.value = false;
+                        }, 500);
+                    }
+                };
+                
+                // 获取图片URL
+                const getImageUrl = (result) => {
+                    if (result.error) {
+                        return 'https://via.placeholder.com/400x300?text=处理失败';
+                    }
+                    return `${apiBaseUrl}${result.output_url}`;
+                };
+                
+                // 下载图片
+                const downloadImage = (result) => {
+                    if (result.error) {
+                        ElementPlus.ElMessage.error('此图片处理失败，无法下载');
+                        return;
+                    }
+                    
+                    // 创建临时链接并下载
+                    const link = document.createElement('a');
+                    link.href = `${apiBaseUrl}${result.output_url}`;
+                    link.download = result.processed_filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                
+                return {
+                    fileList,
+                    uploading,
+                    results,
+                    uploadProgress,
+                    uploadProgressText,
+                    fileInput,
+                    triggerFileInput,
+                    handleFiles,
+                    removeFile,
+                    submitUpload,
+                    getImageUrl,
+                    downloadImage
+                };
+            }
+        });
+        
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+</body>
+</html>
