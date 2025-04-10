@@ -12,6 +12,9 @@ app = Flask(__name__, static_url_path='', static_folder='static')
 # 配置CORS，允许所有来源
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Use CPU
+device = torch.device('cpu')
+
 # 配置常量
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -35,7 +38,7 @@ def load_model():
         print("正在加载模型...")
         model = AutoModelForImageSegmentation.from_pretrained('AI-ModelScope/RMBG-2.0', trust_remote_code=True)
         torch.set_float32_matmul_precision(['high', 'highest'][0])
-        model.to('cpu')
+        model.to(device)
         model.eval()
         print("模型加载完成！")
     return model
@@ -47,7 +50,8 @@ def process_image(image_path):
     
     # 准备模型和转换
     model = load_model()
-    image_size = (1024, 1024)
+    # image_size = (1024, 1024)
+    image_size = (768, 768)
     transform_image = transforms.Compose([
         transforms.Resize(image_size),
         transforms.ToTensor(),
@@ -71,7 +75,7 @@ def process_image(image_path):
         
         # 转换RGB并处理
         image = img.convert('RGB')
-        input_images = transform_image(image).unsqueeze(0).to('cpu')
+        input_images = transform_image(image).unsqueeze(0).to(device)
         
         # 预测
         with torch.no_grad():
